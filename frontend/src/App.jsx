@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import Hero from './components/layout/Hero';
@@ -8,19 +8,52 @@ import HallOfFame from './components/sidebar/HallOfFame';
 import VoteBox from './components/sidebar/VoteBox';
 import BattleBanner from './components/sidebar/BattleBanner';
 import styles from './App.module.css';
-import { MOCK_EXCUSES, HALL_OF_FAME as MOCK_HOF, CURRENT_VOTE } from './services/mockData';
+import { getExcuses, getHallOfFame, getCurrentVote, createExcuse } from './services/api';
 
 function App() {
-  const [excuses, setExcuses] = useState(MOCK_EXCUSES);
+  const [excuses, setExcuses] = useState([]);
+  const [hallOfFame, setHallOfFame] = useState([]);
+  const [currentVote, setCurrentVote] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddExcuse = (newExcuse) => {
-    setExcuses([newExcuse, ...excuses]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [excusesRes, hofRes, voteRes] = await Promise.all([
+          getExcuses(),
+          getHallOfFame(),
+          getCurrentVote()
+        ]);
+        setExcuses(excusesRes.data);
+        setHallOfFame(hofRes.data);
+        setCurrentVote(voteRes.data);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleAddExcuse = async (newExcuseData) => {
+    try {
+      const response = await createExcuse(newExcuseData);
+      setExcuses([response.data, ...excuses]);
+    } catch (error) {
+      console.error('Failed to add excuse:', error);
+      alert('핑계 등록에 실패했습니다.');
+    }
   };
+
+  if (loading) {
+    return <div className={styles.loading}>로딩 중...</div>;
+  }
 
   return (
     <div className={styles.container}>
       <Header />
-      <Hero bestExcuse={MOCK_HOF[0].content} />
+      <Hero bestExcuse={hallOfFame[0]?.content || "신박한 핑계를 기다리고 있어요!"} />
       
       <main className={styles.main}>
         <section className={styles.leftContent}>
@@ -29,8 +62,8 @@ function App() {
         </section>
         
         <aside className={styles.sidebar}>
-          <HallOfFame items={MOCK_HOF} />
-          <VoteBox vote={CURRENT_VOTE} />
+          <HallOfFame items={hallOfFame} />
+          {currentVote && <VoteBox vote={currentVote} />}
           <BattleBanner />
         </aside>
       </main>
