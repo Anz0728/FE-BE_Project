@@ -16,13 +16,11 @@ const ExcuseForm = ({ onAdd }) => {
     if (!content || !nickname || !password) return alert('모든 필드를 입력해주세요!');
 
     const newExcuse = {
-      id: Date.now(),
       nickname,
-      emotion: selectedEmotion,
+      password,
       content,
-      likes: 0,
       category: selectedCategory,
-      createdAt: new Date().toLocaleString(),
+      emotionTag: selectedEmotion,
     };
 
     onAdd(newExcuse);
